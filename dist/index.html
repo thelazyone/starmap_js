@@ -1,68 +1,24 @@
 <!DOCTYPE html><html><head>
     <title>Simple 3D Star Map</title>
-    <style>body { margin: 0; overflow: hidden; }</style>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+        }
+        .star-map {
+            width: 800px;
+            height: 600px;
+        }
+    </style>
 </head>
 <body>
     <script src="https://unpkg.com/three@0.126.1/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.126.1/examples/js/controls/OrbitControls.js"></script>
-    <script>
-        var scene = new THREE.Scene();
-        var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        var renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+    <script src="/starmap-deafe0de747662a9.js" integrity="sha384-UAM3_0urVn4PR29Ni2OtyPTHN_Ps1jE7ZJxFs1yBScIbAOVp12EAL_OWGTPh8neK" rel="copy-file"></script>
 
-        // OrbitControls for navigation
-        var controls = new THREE.OrbitControls(camera, renderer.domElement);
-        camera.position.set(0, 0, 100); // Try adjusting this if stars aren't visible
-        controls.update();
+    HELLO THERE    
+    <div class="star-map" data-coordinates="[{&quot;x&quot;: 1, &quot;y&quot;: 2, &quot;z&quot;: 3}, {&quot;x&quot;: 4, &quot;y&quot;: 5, &quot;z&quot;: 6}, {&quot;x&quot;: 2, &quot;y&quot;: 4, &quot;z&quot;: 7}]"></div>
 
-        // Create stars
-        screen_width = 300;
-        var starGeometry = new THREE.BufferGeometry();
-        var stars = new Float32Array(1000 * 3); // 1000 stars, 3 values (x, y, z) each
-        for (let i = 0; i < stars.length; i++) {
-            stars[i] = (Math.random() - 0.5) * screen_width; // Distribute stars from -300 to 300 in all directions
-        }
-        starGeometry.setAttribute('position', new THREE.BufferAttribute(stars, 3));
-
-        var starMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                color: { value: new THREE.Color(0xffffff) },
-                pointSize: { value: 1.5 }
-            },
-            vertexShader: `
-                uniform float pointSize;
-                varying vec2 vUv;
-                void main() {
-                    vUv = uv;
-                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                    gl_PointSize = pointSize * (300.0 / -mvPosition.z);
-                    gl_Position = projectionMatrix * mvPosition;
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 color;
-                void main() {
-                    float r = length(gl_PointCoord - vec2(0.5, 0.5));
-                    if (r > 0.5) {
-                        discard;
-                    }
-                    gl_FragColor = vec4(color, 1.0);
-                }
-            `,
-            transparent: true,
-        });
-        var starField = new THREE.Points(starGeometry, starMaterial);
-        scene.add(starField);
-
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update(); // Required if controls.enableDamping or controls.autoRotate are set to true
-            renderer.render(scene, camera);
-        }
-        animate();
-    </script>
 
 
 <script>"use strict";
