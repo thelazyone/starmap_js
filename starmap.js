@@ -2,8 +2,13 @@ document.addEventListener("DOMContentLoaded", function() {
     var starMaps = document.querySelectorAll('.star-map');
 
     starMaps.forEach(function(mapElement) {
-        var coordinates = JSON.parse(mapElement.getAttribute('data-coordinates'));
+        var coordinatesArray = JSON.parse(mapElement.getAttribute('data-coordinates'));
         console.log("Initializing starmap...");
+    
+        // Directly convert the simplified array of numbers into a Float32Array
+        var coordinates = new Float32Array(coordinatesArray);
+    
+        // Pass the Float32Array to your initStarMap function
         initStarMap(mapElement, coordinates);
         console.log("Starmap started.");
     });
@@ -30,7 +35,10 @@ function initStarMap(container, coordinates) {
     for (let i = 0; i < stars.length; i++) {
         stars[i] = (Math.random() - 0.5) * screen_width; // Distribute stars from -300 to 300 in all directions
     }
-    starGeometry.setAttribute('position', new THREE.BufferAttribute(stars, 3));
+
+    var inputStars = coordinates.map(Number);
+    console.log(coordinates);
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(inputStars, 3));
     console.log("Created 1000 stars");
 
     var starMaterial = new THREE.ShaderMaterial({
