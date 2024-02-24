@@ -3,23 +3,69 @@
 <head>
     <title>Simple 3D Star Map</title>
     <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-        }
-        .star-map {
-            width: 800px;
-            height: 600px;
-        }
+    body {
+        font-family: 'Georgia', serif; /* This is a commonly used soothing font */
+        background-color: #f5f5dc; /* Light cream background */
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center; /* Centers the content horizontally */
+        align-items: center; /* Centers the content vertically */
+        min-height: 100vh; /* Full viewport height */
+    }
+
+    .content {
+        max-width: 800px; /* Maximum width of the central column */
+        width: 100%; /* Adapts to the width of the device up to 800px */
+        padding: 20px; /* Padding around the text */
+        box-sizing: border-box; /* Includes padding in the element's total width */
+    }
+
+    .star-map {
+        width: 800px;
+        height: 600px;
+        background-color: #f5f5dc; /* Light cream background */
+        border: 4px solid #666666; /* Nice border color */
+        border-radius: 15px; /* Rounded edges */
+        overflow: hidden; /* Ensures the canvas respects the container's rounded corners */
+        position: relative;
+        margin-top: 20px; /* Space above the star map */
+    }
+
+    .star-label {
+        font-family: 'Arial', sans-serif; /* A more readable font for small labels */
+        font-size: 10px;
+        color: black; /* Black text for labels */
+        background-color: rgba(255, 255, 240, 0.8); /* Slightly transparent background for labels */
+        padding: 2px;
+        border-radius: 3px;
+    }
     </style>
 </head>
 <body>
     <script src="https://unpkg.com/three@0.126.1/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.126.1/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.126.1/examples/js/renderers/CSS2DRenderer.js"></script>
     <script src="starmap.js" data-trunk rel="copy-file"></script>
 
-    HELLO THERE    
-    <div class="star-map" data-coordinates='[1, 2, 3, 4, 5, 6, 2, 4, 7]'></div>
+    <body>
+        <div class="content">
+            <p>Hello, welcome to my star map!</p>
+            <!-- Your text content goes here -->
+    
+            <div class="star-map" 
+                data-coordinates='[30, 20, 31, 44, -21, 10, 2, 4, 7]' 
+                data-labels='["Label 1", "Label 2", "Label 3"]' 
+                style="width: 800px; height: 600px; position: relative;">
+                <!-- Star map will be rendered here -->
+            </div>
+    
+            <!-- More text content can go here -->
+        </div>
+    
+        <!-- Your scripts -->
+    </body>
+
 
 </body>
 </html>
