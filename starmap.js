@@ -80,17 +80,12 @@ function addResetButtonToStarMap(localContainer, camera, controls) {
     });
 }
 
+function highlightStar(starMaterial, starPosition) {
+    starMaterial.uniforms.highlightPosition.value = starPosition;
+}
 
-
-
-function highlightStar(star, scene) {
-    // Create a torus geometry that acts as a circle around the star
-    var geometry = new THREE.TorusGeometry(1, 0.1, 16, 100);
-    var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-    var torus = new THREE.Mesh(geometry, material);
-
-    torus.position.copy(star.position); // Position the circle around the star
-    scene.add(torus); // Add the circle to the scene
+function setTime(starMaterial, starTime) {
+    starMaterial.uniforms.time.value = starTime;
 }
 
 function showStarDetails(name, link, infoDiv) {
@@ -111,7 +106,7 @@ function hideStarDetails(infoDiv) {
     infoDiv.style.display = 'none'; // Hide info
  }
 
-function setupStarClickHandler(container, renderer, camera, scene, inputStarField, labelsArray, linksArray) {
+function setupStarClickHandler(container, renderer, camera, starMaterial, inputStarField, labelsArray, linksArray) {
     
      // Create the label element once and reuse it
      var infoDiv = document.createElement('div');
@@ -153,26 +148,31 @@ function setupStarClickHandler(container, renderer, camera, scene, inputStarFiel
             let selectedStar = intersects[0].object;
             let selectedIndex = intersects[0].index
 
-            console.log(selectedIndex)
 
-            let name = labelsArray[selectedIndex]; // Get name, or use default
-            let link = linksArray[selectedIndex]; // Get link, or use default
-            console.log(name, " ", link);
-
+            // Extracting name, link and position. The latter is not elegant because of the three assignments.
+            let name = labelsArray[selectedIndex];
+            let link = linksArray[selectedIndex];             
+            let positions = inputStarField.geometry.attributes.position.array;
+            let selectedPos = new THREE.Vector3(positions[selectedIndex * 3], positions[selectedIndex * 3 + 1], positions[selectedIndex * 3 + 2]);
 
             // Proceed to highlight the star and show details
-            highlightStar(selectedStar, scene);
+            highlightStar(starMaterial, selectedPos);
             showStarDetails(name, link, infoDiv); // Adjust as needed
         }
         else 
         {
             hideStarDetails(infoDiv);
+            highlightStar(starMaterial, new THREE.Vector3(NaN, NaN, NaN));
         }
     }, false);
 }
 
 
 function initStarMap(container, coordinates, labelsArray, linksArray) {
+
+    // Time now
+    const startTime = Date.now();
+
     // Your existing Three.js setup here, modified to use `container` and `coordinates`
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
@@ -193,36 +193,91 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
     // Defining Star Material
     var starMaterial = new THREE.ShaderMaterial({
         uniforms: {
-            color: { value: new THREE.Color(0x000000) }, // Black color for dots/stars
-            pointSize: { value: 1.5 }
+            color: { value: new THREE.Color(0x000000) },
+            pointSize: { value: 2.5 },
+            maxSize: { value: 40 },
+            highlightPosition: { value: new THREE.Vector3(-1000, -1000, -1000) }, // Default off-screen
+            highlightColor: { value: new THREE.Color(0x000000) }, // Highlight color
+            time: {value: 0.}
         },
         vertexShader: `
             uniform float pointSize;
+            uniform float maxSize;
+            uniform int selectedStarIndex;
+            uniform vec3 highlightPosition;
+            varying float isHighlighted;
             varying vec2 vUv;
             void main() {
                 vUv = uv;
                 vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
                 gl_PointSize = pointSize * (300.0 / -mvPosition.z);
+                gl_PointSize = min(gl_PointSize, maxSize); // DOESN'T WORK
                 gl_Position = projectionMatrix * mvPosition;
+
+                // float distanceToHighlight = distance(mvPosition.xyz,highlightPosition.xyz);
+                float distanceToHighlight = distance(mvPosition.xyz, (modelViewMatrix * vec4(highlightPosition, 1.0)).xyz);
+                if (distanceToHighlight < 0.001)
+                {
+                    float highlightScale = 5.;
+                    isHighlighted = 1.0;
+                    gl_PointSize *= highlightScale;
+                }
+                else 
+                {
+                    isHighlighted = -1.0;
+                }
             }
         `,
+
         fragmentShader: `
+            #define M_PI 3.1415926535897932384626433832795
             uniform vec3 color;
+            uniform vec3 highlightColor;
+            varying float isHighlighted;
+            uniform float time;
+
             void main() {
                 float r = length(gl_PointCoord - vec2(0.5, 0.5));
-                if (r > 0.5) {
-                    discard;
+
+
+                if (isHighlighted > 0.) {
+
+                    float highlightScale = 5.;
+
+                    // Radius pulsates every 2 seconds)
+                    float innerRadius = sin (time * 12. / M_PI) * .1 + 1.1;
+
+                    if (r > 0.5 / highlightScale && (r < innerRadius / highlightScale || r > (innerRadius + 0.3) / highlightScale) ){
+                        discard;
+                    }
+
+                    gl_FragColor = vec4(highlightColor, 1.0);
                 }
-                gl_FragColor = vec4(color, 1.0);
+                else {
+                    if (r > 0.5) {
+                        discard;
+                    }
+
+                    gl_FragColor = vec4(color, 1.0);
+                }
             }
         `,
         transparent: true,
     });
 
+                    // // Highlight effect based on distance to highlightPosition
+                // // This logic needs adjustment - it's a conceptual placeholder
+                // if (length(position - highlightPosition) < someThreshold) {
+                //     gl_FragColor = vec4(highlightColor, 1.0);
+                // } else {
+                //     gl_FragColor = vec4(color, 1.0);
+                // }
+
     // Defining look for outer stars 
     var outerStarsMaterial = starMaterial.clone();
     outerStarsMaterial.uniforms.color.value = new THREE.Color(0xbbbbbb); 
     outerStarsMaterial.uniforms.pointSize.value = 1;
+    outerStarsMaterial.uniforms.maxSize.value = 5;
 
     // OrbitControls for navigation
     var controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -267,15 +322,18 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
     addResetButtonToStarMap(container, camera, controls);
 
     // Star Click callback
-    setupStarClickHandler(container, renderer, camera, scene, inputStarField, labelsArray, linksArray);
+    setupStarClickHandler(container, renderer, camera, starMaterial, inputStarField, labelsArray, linksArray);
 
     function animate() {
         requestAnimationFrame(animate);
+
+        const elapsedTime = (Date.now() - startTime) / 1000.0; // Time in seconds
+        starMaterial.uniforms.time.value = elapsedTime;
+
         controls.update();
         renderer.render(scene, camera);
         labelRenderer.render(scene, camera);
     }
     console.log("Calling animate");
-    animate();
+    animate(starMaterial);
 }
-
