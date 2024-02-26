@@ -41,6 +41,39 @@ class SeededRandom {
     }
 }
 
+function addResetButtonToStarMap(localContainer, camera, controls) {
+    // Create the button element
+    var resetViewButton = document.createElement('button');
+    resetViewButton.innerHTML = 'Reset View';
+    resetViewButton.style.position = 'absolute';
+    resetViewButton.style.bottom = '20px';
+    resetViewButton.style.right = '20px';
+    resetViewButton.style.fontFamily = 'Arial, sans-serif';
+    resetViewButton.style.fontSize = '10px';
+    resetViewButton.style.color = 'black';
+    resetViewButton.style.backgroundColor = 'rgba(255, 255, 240, 0.8)';
+    resetViewButton.style.padding = '2px';
+    
+    resetViewButton.style.borderRadius = '3px';
+    resetViewButton.style.border = '2px solid rgba(30, 30, 30, 1)'; // 2px wide, solid, dark gray border
+    resetViewButton.style.cursor = 'pointer';
+    resetViewButton.style.zIndex = '100'; // Ensure it's above other elements in the container
+
+
+    // Append the button to the star map
+    localContainer.appendChild(resetViewButton); // THIS ONE GIVES ERROR.
+
+    // Add click event listener for the reset functionality
+    resetViewButton.addEventListener('click', function() {
+        console.log("Reset view clicked"); // Placeholder for actual reset logic
+        camera.position.set(0, 0, 100); // Reset camera position
+        if (controls) {
+            controls.target.set(0, 0, 0); // Reset controls target
+            controls.update();
+        }    
+    });
+}
+
 function initStarMap(container, coordinates, labelsArray) {
     // Your existing Three.js setup here, modified to use `container` and `coordinates`
     var scene = new THREE.Scene();
@@ -133,6 +166,9 @@ function initStarMap(container, coordinates, labelsArray) {
         }
     }
 
+    // Create the button element
+    addResetButtonToStarMap(container, camera, controls);
+
     function animate() {
         requestAnimationFrame(animate);
         controls.update();
@@ -142,3 +178,4 @@ function initStarMap(container, coordinates, labelsArray) {
     console.log("Calling animate");
     animate();
 }
+
