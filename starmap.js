@@ -28,9 +28,10 @@ document.addEventListener("DOMContentLoaded", function() {
         var coordinates = new Float32Array(coordinatesArray);
         var labelsArray = JSON.parse(mapElement.getAttribute('data-labels') || '[]'); // Ensure a default empty array if no labels are provided
         var linksArray = JSON.parse(mapElement.getAttribute('data-links') || '[]'); // Ensure a default empty array if no labels are provided
+        var descriptionsArray = JSON.parse(mapElement.getAttribute('data-descriptions') || '[]'); // Ensure a default empty array if no labels are provided
     
         // Pass the Float32Array to your initStarMap function
-        initStarMap(mapElement, coordinates, labelsArray, linksArray);
+        initStarMap(mapElement, coordinates, labelsArray, linksArray, descriptionsArray);
         console.log("Starmap started.");
     });
 });
@@ -38,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // Returning  random bell point
 function normalRandom(randomNumber) {
-    var halfBell = Math.sqrt(Math.log(1/randomNumber));
+    var halfBell = 1 - Math.sqrt(Math.log(1/(-randomNumber + 1))); 
     return halfBell * Math.sign(randomNumber%0.01 - 0.005);
 }
 
@@ -101,7 +102,7 @@ function setTime(starMaterial, starTime) {
     starMaterial.uniforms.time.value = starTime;
 }
 
-function showStarDetails(name, link, infoDiv) {
+function showStarDetails(name, link, description, infoDiv) {
 
     // Create a div element for the details
     if (link == "") {
@@ -111,7 +112,8 @@ function showStarDetails(name, link, infoDiv) {
     {
         infoDiv.innerHTML = `Planet <a href="${link}" target="_blank">${name} </a>`;
     }
-    console.log(infoDiv.innerHTML);
+    infoDiv.innerHTML += `<br/>`
+    infoDiv.innerHTML += `<div style="font-size:12px;">${description}</div>`;
     infoDiv.style.display = 'block'; // Make visible
 }
 
@@ -120,13 +122,14 @@ function hideStarDetails(infoDiv) {
     infoDiv.style.display = 'none'; // Hide info
  }
 
-function setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, labelsArray, linksArray) {
+function setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, labelsArray, linksArray, descriptionsArray) {
     
      // Create the label element once and reuse it
      var infoDiv = document.createElement('div');
      infoDiv.style.position = 'absolute';
      infoDiv.style.top = '20px'; // Adjust for top-right positioning
      infoDiv.style.left = '20px';
+     infoDiv.style.maxWidth = '30%';
      infoDiv.style.fontFamily = 'Arial, sans-serif';
      infoDiv.style.fontSize = '18px';
      infoDiv.style.color = 'black';
@@ -165,13 +168,14 @@ function setupStarClickHandler(container, renderer, camera, controls, starMateri
 
             // Extracting name, link and position. The latter is not elegant because of the three assignments.
             let name = labelsArray[selectedIndex];
-            let link = linksArray[selectedIndex];             
+            let link = linksArray[selectedIndex];   
+            let description = descriptionsArray[selectedIndex];          
             let positions = inputStarField.geometry.attributes.position.array;
             let selectedPos = new THREE.Vector3(positions[selectedIndex * 3], positions[selectedIndex * 3 + 1], positions[selectedIndex * 3 + 2]);
 
             // Proceed to highlight the star and show details
             highlightStar(starMaterial, selectedPos);
-            showStarDetails(name, link, infoDiv); // Adjust as needed
+            showStarDetails(name, link, description, infoDiv); // Adjust as needed
 
             // Center the view as well.
             centerView(selectedPos, controls);
@@ -189,22 +193,23 @@ function setupStarClickHandler(container, renderer, camera, controls, starMateri
 function addLegend(container){
     var legendDiv = document.createElement('div');
     legendDiv.style.position = 'absolute';
-    legendDiv.style.bottom = '10px'; // Position it at the bottom
-    legendDiv.style.left = '50%'; // Center it relative to the container
-    legendDiv.style.transform = 'translateX(-50%)'; // Shift it to the left by half of its width
+    legendDiv.style.bottom = '10px'; 
+    legendDiv.style.left = '50%'; 
+    legendDiv.style.transform = 'translateX(-50%)'; 
     legendDiv.style.fontFamily = 'Arial, sans-serif';
     legendDiv.style.fontSize = '12px';
     legendDiv.style.color = 'black';
     legendDiv.style.backgroundColor = 'rgba(255, 255, 240, 0.8)';
     legendDiv.style.padding = '8px';
     legendDiv.style.borderRadius = '3px';
-    legendDiv.style.textAlign = 'center'; // Ensure the text is centered within the div
+    legendDiv.style.textAlign = 'center'; 
     legendDiv.innerHTML = `Navigate with mouse; double click for more info.`;
-    container.appendChild(legendDiv); // Append to the specified container
+    container.appendChild(legendDiv); 
 }
 
 
-function initStarMap(container, coordinates, labelsArray, linksArray) {
+// TODO since the labelsArray is now already three different ones, use a better data structure
+function initStarMap(container, coordinates, labelsArray, linksArray, descriptionsArray) {
 
     // Time now
     const startTime = Date.now();
@@ -230,7 +235,7 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
     var starMaterial = new THREE.ShaderMaterial({
         uniforms: {
             color: { value: new THREE.Color(0x000000) },
-            pointSize: { value: 2.5 },
+            pointSize: { value: 3.5 },
             maxSize: { value: 40 },
             highlightPosition: { value: new THREE.Vector3(-1000, -1000, -1000) }, // Default off-screen
             highlightColor: { value: new THREE.Color(0x000000) }, // Highlight color
@@ -243,14 +248,16 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
             uniform vec3 highlightPosition;
             varying float isHighlighted;
             varying vec2 vUv;
+            varying float roundRadius;
+
             void main() {
                 vUv = uv;
                 vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
                 gl_PointSize = pointSize * (300.0 / -mvPosition.z);
                 gl_PointSize = min(gl_PointSize, maxSize); // DOESN'T WORK
                 gl_Position = projectionMatrix * mvPosition;
+                roundRadius = gl_PointSize;
 
-                // float distanceToHighlight = distance(mvPosition.xyz,highlightPosition.xyz);
                 float distanceToHighlight = distance(mvPosition.xyz, (modelViewMatrix * vec4(highlightPosition, 1.0)).xyz);
                 if (distanceToHighlight < 0.001)
                 {
@@ -271,21 +278,29 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
             uniform vec3 highlightColor;
             varying float isHighlighted;
             uniform float time;
+            varying float roundRadius;
 
             void main() {
                 float r = length(gl_PointCoord - vec2(0.5, 0.5));
+                float smoothArea = min(0.4, 20./pow(roundRadius, 1.5));
+                float highlightScale = 5.;
 
 
                 if (isHighlighted > 0.) {
 
-                    float highlightScale = 5.;
-
                     // Radius pulsates every 2 seconds)
                     float innerRadius = sin (time * 12. / M_PI) * .1 + 1.1;
+                    float ringThickness = 0.6;
+                    float outerRadius = innerRadius + ringThickness;
+                    r *= highlightScale;
 
-                    if (r > 0.5 / highlightScale && (r < innerRadius / highlightScale || r > (innerRadius + 0.3) / highlightScale) ){
+                    if (r > 0.5 && (r < innerRadius || r > outerRadius)){
                         discard;
                     }
+
+                    // float alpha = smoothstep(0.5, 0.5 - smoothArea, r) + 
+                    // smoothstep(innerRadius, innerRadius + smoothArea, r) - 
+                    // smoothstep(outerRadius - smoothArea, outerRadius, r);
 
                     gl_FragColor = vec4(highlightColor, 1.0);
                 }
@@ -293,6 +308,8 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
                     if (r > 0.5) {
                         discard;
                     }
+
+                    float alpha = smoothstep(0.5, 0.5 - smoothArea, r);
 
                     gl_FragColor = vec4(color, 1.0);
                 }
@@ -312,12 +329,14 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
     // Defining look for outer stars 
     var outerStarsMaterial = starMaterial.clone();
     outerStarsMaterial.uniforms.color.value = new THREE.Color(0xbbbbbb); 
-    outerStarsMaterial.uniforms.pointSize.value = 1;
+    outerStarsMaterial.uniforms.pointSize.value = 1.5;
     outerStarsMaterial.uniforms.maxSize.value = 5;
 
     // OrbitControls for navigation
     var controls = new THREE.OrbitControls(camera, renderer.domElement);
     camera.position.set(0, 0, 100); // Try adjusting this if stars aren't visible
+    controls.maxDistance = 200;
+    controls.minDistance = 40;
     controls.update();
 
     // Create stars
@@ -330,8 +349,8 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
     // Adding background stars
     var rng = new SeededRandom(0);
     var outerStarsGeometry = new THREE.BufferGeometry();
-    var outerStarsRadius = 100;
-    var outerStarsAmount =5000;
+    var outerStarsRadius = 300;
+    var outerStarsAmount = 5000;
     var outerStarsPosition = new Float32Array(outerStarsAmount * 3); // 1000 stars, 3 values (x, y, z) each
     for (let i = 0; i < outerStarsPosition.length; i++) {
         outerStarsPosition[i] = (normalRandom(rng.random())) * outerStarsRadius; // Distribute stars from -300 to 300 in all directions
@@ -359,7 +378,7 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
     addResetButtonToStarMap(container, camera, controls);
 
     // Star Click callback
-    setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, labelsArray, linksArray);
+    setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, labelsArray, linksArray, descriptionsArray);
 
     // Adding small legend 
     addLegend(container); 
