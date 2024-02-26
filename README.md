@@ -25,3 +25,12 @@ As an example:
 </div>
 ```
 
+## Main future steps:
+
+* Add more configurations to the html
+* Add an option for a file to parse rather than the html - maybe a json? - for more complex situations
+* Auto generate a list of the neighbours when selecting a star
+* Being able to select areas-of-influence of stars, using the shader for this (in post-processing?)
+* Creating highlighted routes between stars
+
+
