@@ -2,7 +2,21 @@
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
 
+// Moving the controls:
+let transitionInProgress = false;
+let newTargetPosition = new THREE.Vector3();
+let transitionSpeed = 0.1; // Adjust this value to control the speed of the transition
 
+function centerView(position, controls) {
+    newTargetPosition.copy(position);
+    transitionInProgress = true;
+}
+
+function setTargetView() {
+
+}
+
+// Startup
 document.addEventListener("DOMContentLoaded", function() {
     var starMaps = document.querySelectorAll('.star-map');
 
@@ -55,10 +69,10 @@ function addResetButtonToStarMap(localContainer, camera, controls) {
     resetViewButton.style.bottom = '20px';
     resetViewButton.style.right = '20px';
     resetViewButton.style.fontFamily = 'Arial, sans-serif';
-    resetViewButton.style.fontSize = '10px';
+    resetViewButton.style.fontSize = '18px';
     resetViewButton.style.color = 'black';
     resetViewButton.style.backgroundColor = 'rgba(255, 255, 240, 0.8)';
-    resetViewButton.style.padding = '2px';
+    resetViewButton.style.padding = '8px';
 
     resetViewButton.style.borderRadius = '3px';
     resetViewButton.style.border = '2px solid rgba(30, 30, 30, 1)'; // 2px wide, solid, dark gray border
@@ -102,11 +116,12 @@ function showStarDetails(name, link, infoDiv) {
     infoDiv.style.display = 'block'; // Make visible
 }
 
+
 function hideStarDetails(infoDiv) {
     infoDiv.style.display = 'none'; // Hide info
  }
 
-function setupStarClickHandler(container, renderer, camera, starMaterial, inputStarField, labelsArray, linksArray) {
+function setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, labelsArray, linksArray) {
     
      // Create the label element once and reuse it
      var infoDiv = document.createElement('div');
@@ -114,16 +129,16 @@ function setupStarClickHandler(container, renderer, camera, starMaterial, inputS
      infoDiv.style.top = '20px'; // Adjust for top-right positioning
      infoDiv.style.left = '20px';
      infoDiv.style.fontFamily = 'Arial, sans-serif';
-     infoDiv.style.fontSize = '10px';
+     infoDiv.style.fontSize = '18px';
      infoDiv.style.color = 'black';
      infoDiv.style.backgroundColor = 'rgba(255, 255, 240, 0.8)';
-     infoDiv.style.padding = '2px';
+     infoDiv.style.padding = '8px';
      infoDiv.style.borderRadius = '3px';
      infoDiv.style.border = '2px solid rgba(30, 30, 30, 1)';
      infoDiv.style.display = 'none'; // Initially hidden
      container.appendChild(infoDiv); // Append to body or a specific container
     
-     renderer.domElement.addEventListener('click', function(event) {
+     renderer.domElement.addEventListener('dblclick', function(event) {
         var mouse = new THREE.Vector2();
         var raycaster = new THREE.Raycaster();
 
@@ -158,6 +173,9 @@ function setupStarClickHandler(container, renderer, camera, starMaterial, inputS
             // Proceed to highlight the star and show details
             highlightStar(starMaterial, selectedPos);
             showStarDetails(name, link, infoDiv); // Adjust as needed
+
+            // Center the view as well.
+            centerView(selectedPos, controls);
         }
         else 
         {
@@ -294,8 +312,8 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
     // Adding background stars
     var rng = new SeededRandom(0);
     var outerStarsGeometry = new THREE.BufferGeometry();
-    var outerStarsRadius = 50;
-    var outerStarsAmount =1200;
+    var outerStarsRadius = 100;
+    var outerStarsAmount =5000;
     var outerStarsPosition = new Float32Array(outerStarsAmount * 3); // 1000 stars, 3 values (x, y, z) each
     for (let i = 0; i < outerStarsPosition.length; i++) {
         outerStarsPosition[i] = (normalRandom(rng.random())) * outerStarsRadius; // Distribute stars from -300 to 300 in all directions
@@ -310,7 +328,8 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
             var labelDiv = document.createElement('div');
             labelDiv.className = 'star-label';
             labelDiv.textContent = labelsArray[i / 3];
-            labelDiv.style.marginTop = '-3em'; // Adjust as needed
+            labelDiv.style.marginTop = '-1em'; // Adjust as needed
+            labelDiv.style.fontSize = '18px'; // Adjust as needed
             var label = new THREE.CSS2DObject(labelDiv);
             yOffset = -0; 
             label.position.set(coordinates[i], coordinates[i + 1] + yOffset, coordinates[i + 2]);
@@ -322,13 +341,25 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
     addResetButtonToStarMap(container, camera, controls);
 
     // Star Click callback
-    setupStarClickHandler(container, renderer, camera, starMaterial, inputStarField, labelsArray, linksArray);
+    setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, labelsArray, linksArray);
 
     function animate() {
         requestAnimationFrame(animate);
 
         const elapsedTime = (Date.now() - startTime) / 1000.0; // Time in seconds
         starMaterial.uniforms.time.value = elapsedTime;
+
+        // If the controls are moving:
+        if (transitionInProgress) {
+            // Smoothly interpolate the controls target towards the new target position
+            controls.target.lerp(newTargetPosition, transitionSpeed);
+    
+            // Check if the transition is complete
+            if (controls.target.distanceTo(newTargetPosition) < 1) {
+                // Consider the transition complete if the distance is below a threshold
+                transitionInProgress = false;
+            }
+        }
 
         controls.update();
         renderer.render(scene, camera);
