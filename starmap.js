@@ -79,7 +79,6 @@ function addResetButtonToStarMap(localContainer, camera, controls) {
     resetViewButton.style.cursor = 'pointer';
     resetViewButton.style.zIndex = '100'; // Ensure it's above other elements in the container
 
-
     // Append the button to the star map
     localContainer.appendChild(resetViewButton); 
 
@@ -183,6 +182,25 @@ function setupStarClickHandler(container, renderer, camera, controls, starMateri
             highlightStar(starMaterial, new THREE.Vector3(NaN, NaN, NaN));
         }
     }, false);
+}
+
+
+// Adding some simple legend
+function addLegend(container){
+    var legendDiv = document.createElement('div');
+    legendDiv.style.position = 'absolute';
+    legendDiv.style.bottom = '10px'; // Position it at the bottom
+    legendDiv.style.left = '50%'; // Center it relative to the container
+    legendDiv.style.transform = 'translateX(-50%)'; // Shift it to the left by half of its width
+    legendDiv.style.fontFamily = 'Arial, sans-serif';
+    legendDiv.style.fontSize = '12px';
+    legendDiv.style.color = 'black';
+    legendDiv.style.backgroundColor = 'rgba(255, 255, 240, 0.8)';
+    legendDiv.style.padding = '8px';
+    legendDiv.style.borderRadius = '3px';
+    legendDiv.style.textAlign = 'center'; // Ensure the text is centered within the div
+    legendDiv.innerHTML = `Navigate with mouse; double click for more info.`;
+    container.appendChild(legendDiv); // Append to the specified container
 }
 
 
@@ -342,6 +360,9 @@ function initStarMap(container, coordinates, labelsArray, linksArray) {
 
     // Star Click callback
     setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, labelsArray, linksArray);
+
+    // Adding small legend 
+    addLegend(container); 
 
     function animate() {
         requestAnimationFrame(animate);
