@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         } else {
             configuration = loadConfigFromAttributes();
         }
-        initStarMap(mapElement, configuration.coordinates, configuration.labels, configuration.links, configuration.descriptions);
+        initStarMap(mapElement, configuration);
 
         console.log("Starmap started.");
     };
@@ -171,7 +171,7 @@ function hideStarDetails(infoDiv) {
     infoDiv.style.display = 'none'; // Hide info
  }
 
-function setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, labelsArray, linksArray, descriptionsArray) {
+function setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, configuration) {
     
      // Create the label element once and reuse it
      var infoDiv = document.createElement('div');
@@ -216,9 +216,9 @@ function setupStarClickHandler(container, renderer, camera, controls, starMateri
 
 
             // Extracting name, link and position. The latter is not elegant because of the three assignments.
-            let name = labelsArray[selectedIndex];
-            let link = linksArray[selectedIndex];   
-            let description = descriptionsArray[selectedIndex];          
+            let name = configuration.labels[selectedIndex];
+            let link = configuration.links[selectedIndex];   
+            let description = configuration.descriptions[selectedIndex];          
             let positions = inputStarField.geometry.attributes.position.array;
             let selectedPos = new THREE.Vector3(positions[selectedIndex * 3], positions[selectedIndex * 3 + 1], positions[selectedIndex * 3 + 2]);
 
@@ -257,9 +257,7 @@ function addLegend(container){
 }
 
 
-// TODO since the labelsArray is now already three different ones, use a better data structure
-function initStarMap(container, coordinates, labelsArray, linksArray, descriptionsArray) {
-
+function initStarMap(container, configuration) {
     // Time now
     const startTime = Date.now();
 
@@ -382,7 +380,7 @@ function initStarMap(container, coordinates, labelsArray, linksArray, descriptio
 
     // Create stars
     var inputStarsGeometry = new THREE.BufferGeometry();
-    var inputStarsPosition = coordinates.map(Number);
+    var inputStarsPosition = configuration.coordinates.map(Number);
     inputStarsGeometry.setAttribute('position', new THREE.BufferAttribute(inputStarsPosition, 3));
     var inputStarField = new THREE.Points(inputStarsGeometry, starMaterial);
     scene.add(inputStarField);
@@ -401,18 +399,18 @@ function initStarMap(container, coordinates, labelsArray, linksArray, descriptio
     scene.add(outerStarField);
 
     // Displaying the labels
-    for (let i = 0; i < coordinates.length / 3; i += 1) {
-        if (i < labelsArray.length) {
+    for (let i = 0; i < configuration.coordinates.length / 3; i += 1) {
+        if (i < configuration.labels.length) {
             var labelDiv = document.createElement('div');
             labelDiv.className = 'star-label';
-            if (labelsArray){
-                labelDiv.textContent = labelsArray[i];
+            if (configuration.labels){
+                labelDiv.textContent = configuration.labels[i];
             }
             labelDiv.style.marginTop = '-1em'; // Adjust as needed
             labelDiv.style.fontSize = '18px'; // Adjust as needed
             var label = new THREE.CSS2DObject(labelDiv);
             yOffset = -0; 
-            label.position.set(coordinates[i*3], coordinates[i*3 + 1] + yOffset, coordinates[i*3 + 2]);
+            label.position.set(configuration.coordinates[i*3], configuration.coordinates[i*3 + 1] + yOffset, configuration.coordinates[i*3 + 2]);
             scene.add(label);
         }
     }
@@ -421,7 +419,7 @@ function initStarMap(container, coordinates, labelsArray, linksArray, descriptio
     addResetButtonToStarMap(container, camera, controls);
 
     // Star Click callback
-    setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, labelsArray, linksArray, descriptionsArray);
+    setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, configuration);
 
     // Adding small legend 
     addLegend(container); 
