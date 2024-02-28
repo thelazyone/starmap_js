@@ -71,6 +71,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 
         if (configUrl) {
             configuration = await loadConfigFromURL(configUrl);
+            console.log("DEBUG: ", configuration);
         } else {
             configuration = loadConfigFromAttributes();
         }
@@ -149,7 +150,7 @@ function setTime(starMaterial, starTime) {
 function showStarDetails(name, link, description, infoDiv) {
 
     // Create a div element for the details
-    if (link == "") {
+    if (!link || link == "") {
         infoDiv.innerHTML = `Planet ${name}`;
     }
     else
@@ -157,7 +158,11 @@ function showStarDetails(name, link, description, infoDiv) {
         infoDiv.innerHTML = `Planet <a href="${link}" target="_blank">${name} </a>`;
     }
     infoDiv.innerHTML += `<br/>`
-    infoDiv.innerHTML += `<div style="font-size:12px;">${description}</div>`;
+    if (description)
+    {
+        infoDiv.innerHTML += `<div style="font-size:12px;">${description}</div>`;
+    }
+
     infoDiv.style.display = 'block'; // Make visible
 }
 
@@ -396,16 +401,18 @@ function initStarMap(container, coordinates, labelsArray, linksArray, descriptio
     scene.add(outerStarField);
 
     // Displaying the labels
-    for (let i = 0; i < coordinates.length; i += 3) {
-        if (i / 3 < labelsArray.length) {
+    for (let i = 0; i < coordinates.length / 3; i += 1) {
+        if (i < labelsArray.length) {
             var labelDiv = document.createElement('div');
             labelDiv.className = 'star-label';
-            labelDiv.textContent = labelsArray[i / 3];
+            if (labelsArray){
+                labelDiv.textContent = labelsArray[i];
+            }
             labelDiv.style.marginTop = '-1em'; // Adjust as needed
             labelDiv.style.fontSize = '18px'; // Adjust as needed
             var label = new THREE.CSS2DObject(labelDiv);
             yOffset = -0; 
-            label.position.set(coordinates[i], coordinates[i + 1] + yOffset, coordinates[i + 2]);
+            label.position.set(coordinates[i*3], coordinates[i*3 + 1] + yOffset, coordinates[i*3 + 2]);
             scene.add(label);
         }
     }

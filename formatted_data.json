@@ -8,14 +8,12 @@
       },
       {
         "coordinates": [30, 40, 31],
-        "label": "Seguro",
         "link": "TestLink",
         "description": "Lorem ipsum dolor sit amet"
       },
       {
         "coordinates": [44, -21, 10],
         "label": "Vavach",
-        "link": "Test2",
         "description": ""
       },
       {
