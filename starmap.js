@@ -26,6 +26,7 @@ async function loadConfigFromURL(configUrl) {
         coordinates: [],
         labels: [],
         links: [],
+        colors: [],
         descriptions: []
     };
 
@@ -39,6 +40,7 @@ async function loadConfigFromURL(configUrl) {
         starMapConfig.coordinates = new Float32Array(data.stars.map(star => star.coordinates).flat());
         starMapConfig.labels = data.stars.map(star => star.label);
         starMapConfig.links = data.stars.map(star => star.link);
+        starMapConfig.colors = data.stars.map(star => star.color);
         starMapConfig.descriptions = data.stars.map(star => star.description);
 
         // Now starMapConfig is populated and can be used to initialize the star map
@@ -57,6 +59,7 @@ function loadConfigFromAttributes(mapElement) {
     coordinates: new Float32Array(JSON.parse(mapElement.getAttribute('data-coordinates'))),
     labels: JSON.parse(mapElement.getAttribute('data-labels') || '[]'),
     links: JSON.parse(mapElement.getAttribute('data-links') || '[]'),
+    colors: JSON.parse(mapElement.getAttribute('data-colors') || '[]'),
     descriptions: JSON.parse(mapElement.getAttribute('data-descriptions') || '[]')};
 }
 
@@ -156,6 +159,7 @@ function showStarDetails(name, link, description, infoDiv) {
         infoDiv.innerHTML = `Planet <a href="${link}" target="_blank">${name} </a>`;
     }
     infoDiv.innerHTML += `<br/>`
+
     if (description)
     {
         infoDiv.innerHTML += `<div style="font-size:12px;">${description}</div>`;
@@ -254,6 +258,35 @@ function addLegend(container){
     container.appendChild(legendDiv); 
 }
 
+// converting a vector of strings for colors (in the format ffffff) to a vector of 3x elements with the r g b.
+function convertColorsToBuffer(colors) {
+    const rgbValues = [];
+
+    colors.forEach(colorStr => {
+        if (!colorStr) {
+            rgbValues.push(0,0,0);
+        } else if (colorStr.length === 6) {
+            console.log("parsing color:", colorStr);
+
+            // Parse the hexadecimal string into RGB components
+            let r = parseInt(colorStr.substring(0, 2), 16) / 255;
+            let g = parseInt(colorStr.substring(2, 4), 16) / 255;
+            let b = parseInt(colorStr.substring(4, 6), 16) / 255;
+
+            console.log("into:", r, g ,b);
+
+            // Push the normalized RGB values to the array
+            rgbValues.push(r, g, b);
+        } else {
+            console.log("Invalid color string:", colorStr);
+            // Push a default color or handle the error as needed
+            rgbValues.push(0, 0, 0); // Example: default to red for error
+        }
+    });
+
+    return new Float32Array(rgbValues);
+}
+
 
 function initStarMap(container, configuration) {
     // Time now
@@ -279,11 +312,10 @@ function initStarMap(container, configuration) {
     // Defining Star Material
     var starMaterial = new THREE.ShaderMaterial({
         uniforms: {
-            color: { value: new THREE.Color(0x000000) },
+            baseColor: { value: new THREE.Color(0x000000) },
             pointSize: { value: 3.5 },
             maxSize: { value: 40 },
             highlightPosition: { value: new THREE.Vector3(-1000, -1000, -1000) }, // Default off-screen
-            highlightColor: { value: new THREE.Color(0x000000) }, // Highlight color
             time: {value: 0.}
         },
         vertexShader: `
@@ -295,6 +327,10 @@ function initStarMap(container, configuration) {
             varying vec2 vUv;
             varying float roundRadius;
 
+            // For colours
+            attribute vec3 color;
+            varying vec3 vColor;
+
             void main() {
                 vUv = uv;
                 vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -302,6 +338,9 @@ function initStarMap(container, configuration) {
                 gl_PointSize = min(gl_PointSize, maxSize); // DOESN'T WORK
                 gl_Position = projectionMatrix * mvPosition;
                 roundRadius = gl_PointSize;
+
+                // Updating colour to pas to the fragment
+                vColor = color;
 
                 float distanceToHighlight = distance(mvPosition.xyz, (modelViewMatrix * vec4(highlightPosition, 1.0)).xyz);
                 if (distanceToHighlight < 0.001)
@@ -319,17 +358,23 @@ function initStarMap(container, configuration) {
 
         fragmentShader: `
             #define M_PI 3.1415926535897932384626433832795
-            uniform vec3 color;
-            uniform vec3 highlightColor;
+            uniform vec3 baseColor;
             varying float isHighlighted;
             uniform float time;
             varying float roundRadius;
+
+            // For colours
+            varying vec3 vColor;
+
 
             void main() {
                 float r = length(gl_PointCoord - vec2(0.5, 0.5));
                 float smoothArea = min(0.4, 20./pow(roundRadius, 1.5));
                 float highlightScale = 5.;
 
+                // checking if vColor is undefined / nan / something else?
+                // TODO
+    
 
                 if (isHighlighted > 0.) {
 
@@ -347,7 +392,7 @@ function initStarMap(container, configuration) {
                     // smoothstep(innerRadius, innerRadius + smoothArea, r) - 
                     // smoothstep(outerRadius - smoothArea, outerRadius, r);
 
-                    gl_FragColor = vec4(highlightColor, 1.0);
+                    gl_FragColor = vec4(vColor, 1.0);
                 }
                 else {
                     if (r > 0.5) {
@@ -356,7 +401,7 @@ function initStarMap(container, configuration) {
 
                     float alpha = smoothstep(0.5, 0.5 - smoothArea, r);
 
-                    gl_FragColor = vec4(color, 1.0);
+                    gl_FragColor = vec4(vColor, 1.0);
                 }
             }
         `,
@@ -365,7 +410,7 @@ function initStarMap(container, configuration) {
 
     // Defining look for outer stars 
     var outerStarsMaterial = starMaterial.clone();
-    outerStarsMaterial.uniforms.color.value = new THREE.Color(0xbbbbbb); 
+    outerStarsMaterial.uniforms.baseColor.value = new THREE.Color(0xbbbbbb); 
     outerStarsMaterial.uniforms.pointSize.value = 1.5;
     outerStarsMaterial.uniforms.maxSize.value = 5;
 
@@ -379,7 +424,10 @@ function initStarMap(container, configuration) {
     // Create stars
     var inputStarsGeometry = new THREE.BufferGeometry();
     var inputStarsPosition = configuration.coordinates.map(Number);
+
+    // Position is a interlaced vector of x y z, Color is the same with r g b. 
     inputStarsGeometry.setAttribute('position', new THREE.BufferAttribute(inputStarsPosition, 3));
+    inputStarsGeometry.setAttribute('color', new THREE.BufferAttribute(convertColorsToBuffer(configuration.colors), 3));   
     var inputStarField = new THREE.Points(inputStarsGeometry, starMaterial);
     scene.add(inputStarField);
 
@@ -393,6 +441,7 @@ function initStarMap(container, configuration) {
         outerStarsPosition[i] = (normalRandom(rng.random())) * outerStarsRadius; // Distribute stars from -300 to 300 in all directions
     }
     outerStarsGeometry.setAttribute('position', new THREE.BufferAttribute(outerStarsPosition, 3));
+    outerStarsGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(outerStarsAmount * 3).fill(.73), 3));
     var outerStarField = new THREE.Points(outerStarsGeometry, outerStarsMaterial);
     scene.add(outerStarField);
 

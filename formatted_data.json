@@ -20,7 +20,8 @@
         "coordinates": [12, 11, 7],
         "label": "Proxima",
         "link": "test3",
-        "description": "test3"
+        "description": "test3",
+        "color": "ff0000"
       },
       {
         "coordinates": [-12, -30, -7],
