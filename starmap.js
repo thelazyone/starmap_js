@@ -5,16 +5,16 @@ var mouse = new THREE.Vector2();
 // Moving the controls:
 let transitionInProgress = false;
 let newTargetPosition = new THREE.Vector3();
+let newCameraPosition = new THREE.Vector3();
+let newZoomValue = 1;
 let transitionSpeed = 0.1; // Adjust this value to control the speed of the transition
 
-function centerView(position, controls) {
+function centerView(position, camera) {
     newTargetPosition.copy(position);
+    newCameraPosition = camera.position;
     transitionInProgress = true;
 }
 
-function setTargetView() {
-
-}
 
 // Startup
 
@@ -107,7 +107,7 @@ class SeededRandom {
     }
 }
 
-function addResetButtonToStarMap(localContainer, camera, controls) {
+function addResetButtonToStarMap(localContainer) {
     // Create the button element
     var resetViewButton = document.createElement('button');
     resetViewButton.innerHTML = 'Reset View';
@@ -120,7 +120,7 @@ function addResetButtonToStarMap(localContainer, camera, controls) {
     resetViewButton.style.backgroundColor = 'rgba(255, 255, 240, 0.8)';
     resetViewButton.style.padding = '8px';
 
-    resetViewButton.style.borderRadius = '3px';
+    resetViewButton.style.borderRadius = '5px';
     resetViewButton.style.border = '2px solid rgba(30, 30, 30, 1)'; // 2px wide, solid, dark gray border
     resetViewButton.style.cursor = 'pointer';
     resetViewButton.style.zIndex = '100'; // Ensure it's above other elements in the container
@@ -131,11 +131,9 @@ function addResetButtonToStarMap(localContainer, camera, controls) {
     // Add click event listener for the reset functionality
     resetViewButton.addEventListener('click', function() {
         console.log("Reset view clicked"); // Placeholder for actual reset logic
-        camera.position.set(0, 0, 100); // Reset camera position
-        if (controls) {
-            controls.target.set(0, 0, 0); // Reset controls target
-            controls.update();
-        }    
+        newCameraPosition.set(0, 0, 100); // Reset camera position
+        newTargetPosition.set(0, 0, 0); // Reset camera position
+        transitionInProgress = true;
     });
 }
 
@@ -171,7 +169,7 @@ function hideStarDetails(infoDiv) {
     infoDiv.style.display = 'none'; // Hide info
  }
 
-function setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, configuration) {
+function setupStarClickHandler(container, renderer, camera, starMaterial, inputStarField, configuration) {
     
      // Create the label element once and reuse it
      var infoDiv = document.createElement('div');
@@ -227,7 +225,7 @@ function setupStarClickHandler(container, renderer, camera, controls, starMateri
             showStarDetails(name, link, description, infoDiv); // Adjust as needed
 
             // Center the view as well.
-            centerView(selectedPos, controls);
+            centerView(selectedPos, camera);
         }
         else 
         {
@@ -416,10 +414,10 @@ function initStarMap(container, configuration) {
     }
 
     // Create the button element
-    addResetButtonToStarMap(container, camera, controls);
+    addResetButtonToStarMap(container);
 
     // Star Click callback
-    setupStarClickHandler(container, renderer, camera, controls, starMaterial, inputStarField, configuration);
+    setupStarClickHandler(container, renderer, camera, starMaterial, inputStarField, configuration);
 
     // Adding small legend 
     addLegend(container); 
@@ -434,9 +432,10 @@ function initStarMap(container, configuration) {
         if (transitionInProgress) {
             // Smoothly interpolate the controls target towards the new target position
             controls.target.lerp(newTargetPosition, transitionSpeed);
-    
+            camera.position.lerp(newCameraPosition, 0.1);
             // Check if the transition is complete
-            if (controls.target.distanceTo(newTargetPosition) < 1) {
+            if ( controls.target.distanceTo(newTargetPosition) < 1 && 
+                 camera.position.distanceTo(newCameraPosition) < 1 ) {
                 // Consider the transition complete if the distance is below a threshold
                 transitionInProgress = false;
             }
