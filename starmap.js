@@ -9,15 +9,14 @@ let newCameraPosition = new THREE.Vector3();
 let newZoomValue = 1;
 let transitionSpeed = 0.1; // Adjust this value to control the speed of the transition
 
+// Sets the view center on the target position, while keeping the camera position.
 function centerView(position, camera) {
     newTargetPosition.copy(position);
-    newCameraPosition = camera.position;
+    newCameraPosition.copy(camera.position);
     transitionInProgress = true;
 }
 
-
-// Startup
-
+// Loads the configuration json file and return a structure with the configuration
 async function loadConfigFromURL(configUrl) {
 
     console.log("Using URL ", configUrl);
@@ -51,6 +50,7 @@ async function loadConfigFromURL(configUrl) {
     return starMapConfig;
 }
 
+// Reads the configuration from the HTML attributes.
 function loadConfigFromAttributes(mapElement) {
 
     console.log("Using Attributes");
@@ -63,6 +63,7 @@ function loadConfigFromAttributes(mapElement) {
     descriptions: JSON.parse(mapElement.getAttribute('data-descriptions') || '[]')};
 }
 
+// Startup function callback
 document.addEventListener("DOMContentLoaded", async function() {
     var starMaps = document.querySelectorAll('.star-map');
 
@@ -84,13 +85,12 @@ document.addEventListener("DOMContentLoaded", async function() {
     };
 });
 
-
-// Returning  random bell point
+// Math utility - Returning a random bell point, to generate a 
+// theta-phi uniform distribution of stars
 function normalRandom(randomNumber) {
     var halfBell = 1 - Math.sqrt(Math.log(1/(-randomNumber + 1))); 
     return halfBell * Math.sign(randomNumber%0.01 - 0.005);
 }
-
 
 // Seeded random
 class SeededRandom {
@@ -110,6 +110,7 @@ class SeededRandom {
     }
 }
 
+// Adds the "RESET VIEW" button, with callback
 function addResetButtonToStarMap(localContainer) {
     // Create the button element
     var resetViewButton = document.createElement('button');
@@ -131,19 +132,25 @@ function addResetButtonToStarMap(localContainer) {
     // Append the button to the star map
     localContainer.appendChild(resetViewButton); 
 
-    // Add click event listener for the reset functionality
+    // The callback sets position and target of thecamera to return to home.
+    // The movement of the camera is handled by lerping both values in the 
+    // animate() main loop.
     resetViewButton.addEventListener('click', function() {
         console.log("Reset view clicked"); // Placeholder for actual reset logic
+
         newCameraPosition.set(0, 0, 100); // Reset camera position
         newTargetPosition.set(0, 0, 0); // Reset camera position
         transitionInProgress = true;
     });
 }
 
+
+// Informing the shader that the star in this position is highlighted.
 function highlightStar(starMaterial, starPosition) {
     starMaterial.uniforms.highlightPosition.value = starPosition;
 }
 
+// Time information for the shader.
 function setTime(starMaterial, starTime) {
     starMaterial.uniforms.time.value = starTime;
 }
@@ -479,10 +486,13 @@ function initStarMap(container, configuration) {
 
         // If the controls are moving:
         if (transitionInProgress) {
+            console.log( camera.position , " to ", newCameraPosition);
+            
             // Smoothly interpolate the controls target towards the new target position
             controls.target.lerp(newTargetPosition, transitionSpeed);
             camera.position.lerp(newCameraPosition, 0.1);
             // Check if the transition is complete
+
             if ( controls.target.distanceTo(newTargetPosition) < 1 && 
                  camera.position.distanceTo(newCameraPosition) < 1 ) {
                 // Consider the transition complete if the distance is below a threshold
