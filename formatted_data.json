@@ -1,0 +1,34 @@
+{
+    "stars": [
+      {
+        "coordinates": [0, 0, 0],
+        "label": "Earth",
+        "link": "https://fsd-wargame.com/",
+        "description": "Good old earth"
+      },
+      {
+        "coordinates": [30, 40, 31],
+        "label": "Seguro",
+        "link": "TestLink",
+        "description": "Lorem ipsum dolor sit amet"
+      },
+      {
+        "coordinates": [44, -21, 10],
+        "label": "Vavach",
+        "link": "Test2",
+        "description": ""
+      },
+      {
+        "coordinates": [12, 11, 7],
+        "label": "Proxima",
+        "link": "test3",
+        "description": "test3"
+      },
+      {
+        "coordinates": [-12, -30, -7],
+        "label": "Another",
+        "link": "",
+        "description": ""
+      }
+    ]
+  }

@@ -43,6 +43,9 @@
     </style>
 </head>
 <body>
+
+    <link data-trunk rel="copy-file" href="formatted_data.json"/>
+
     <script src="https://unpkg.com/three@0.126.1/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.126.1/examples/js/controls/OrbitControls.js"></script>
     <script src="https://unpkg.com/three@0.126.1/examples/js/renderers/CSS2DRenderer.js"></script>
@@ -54,6 +57,7 @@
             <!-- Your text content goes here -->
     
             <div class="star-map" 
+                data-config-url="formatted_data.json"
                 data-coordinates='[0, 0, 0, 30, 40, 31, 44, -21, 10, 12, 11, 7, -12, -30, -7]' 
                 data-labels='["Earth", "Seguro", "Vavach", "Proxima", "Another"]' 
                 data-links='["https://fsd-wargame.com/", "TestLink", "Test2", "test3", ""]'
@@ -61,7 +65,8 @@
                 style="width: 800px; height: 600px; position: relative;">
                 <!-- Star map will be rendered here -->
             </div>
-    
+
+
             <!-- More text content can go here -->
         </div>
     

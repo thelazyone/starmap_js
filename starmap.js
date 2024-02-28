@@ -17,23 +17,67 @@ function setTargetView() {
 }
 
 // Startup
-document.addEventListener("DOMContentLoaded", function() {
+
+async function loadConfigFromURL(configUrl) {
+
+    console.log("Using URL ", configUrl);
+
+    let starMapConfig = {
+        coordinates: [],
+        labels: [],
+        links: [],
+        descriptions: []
+    };
+
+    try {
+        const response = await fetch(configUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+
+        starMapConfig.coordinates = new Float32Array(data.stars.map(star => star.coordinates).flat());
+        starMapConfig.labels = data.stars.map(star => star.label);
+        starMapConfig.links = data.stars.map(star => star.link);
+        starMapConfig.descriptions = data.stars.map(star => star.description);
+
+        // Now starMapConfig is populated and can be used to initialize the star map
+    } catch (error) {
+        console.error("Failed to load star map configuration:", error);
+    }
+
+    return starMapConfig;
+}
+
+function loadConfigFromAttributes(mapElement) {
+
+    console.log("Using Attributes");
+
+    return {
+    coordinates: new Float32Array(JSON.parse(mapElement.getAttribute('data-coordinates'))),
+    labels: JSON.parse(mapElement.getAttribute('data-labels') || '[]'),
+    links: JSON.parse(mapElement.getAttribute('data-links') || '[]'),
+    descriptions: JSON.parse(mapElement.getAttribute('data-descriptions') || '[]')};
+}
+
+document.addEventListener("DOMContentLoaded", async function() {
     var starMaps = document.querySelectorAll('.star-map');
 
-    starMaps.forEach(function(mapElement) {
-        var coordinatesArray = JSON.parse(mapElement.getAttribute('data-coordinates'));
-        console.log("Initializing starmap...");
-    
-        // Directly convert the simplified array of numbers into a Float32Array
-        var coordinates = new Float32Array(coordinatesArray);
-        var labelsArray = JSON.parse(mapElement.getAttribute('data-labels') || '[]'); // Ensure a default empty array if no labels are provided
-        var linksArray = JSON.parse(mapElement.getAttribute('data-links') || '[]'); // Ensure a default empty array if no labels are provided
-        var descriptionsArray = JSON.parse(mapElement.getAttribute('data-descriptions') || '[]'); // Ensure a default empty array if no labels are provided
-    
-        // Pass the Float32Array to your initStarMap function
-        initStarMap(mapElement, coordinates, labelsArray, linksArray, descriptionsArray);
+    for (const mapElement of starMaps) {
+        let configuration;
+
+        // Checking if there's a JSON config file to read.
+        var configUrl = mapElement.getAttribute('data-config-url');
+
+        if (configUrl) {
+            configuration = await loadConfigFromURL(configUrl);
+        } else {
+            configuration = loadConfigFromAttributes();
+        }
+        initStarMap(mapElement, configuration.coordinates, configuration.labels, configuration.links, configuration.descriptions);
+
         console.log("Starmap started.");
-    });
+    };
 });
 
 
@@ -317,14 +361,6 @@ function initStarMap(container, coordinates, labelsArray, linksArray, descriptio
         `,
         transparent: true,
     });
-
-                    // // Highlight effect based on distance to highlightPosition
-                // // This logic needs adjustment - it's a conceptual placeholder
-                // if (length(position - highlightPosition) < someThreshold) {
-                //     gl_FragColor = vec4(highlightColor, 1.0);
-                // } else {
-                //     gl_FragColor = vec4(color, 1.0);
-                // }
 
     // Defining look for outer stars 
     var outerStarsMaterial = starMaterial.clone();
