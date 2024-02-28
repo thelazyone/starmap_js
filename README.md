@@ -2,6 +2,8 @@
 An embeddable starmap in js
 [LIVE DEMO](https://test.thelazyforger.com/starmap/)
 
+<img width="685" alt="image" src="https://github.com/thelazyone/starmap_js/assets/10134358/644aef4d-95cd-4b38-a941-80b63863b763">
+
 ## Simple usage:
 
 Bring the starmap.js into your storage, and in the html load it by including 
