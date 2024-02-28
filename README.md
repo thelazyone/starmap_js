@@ -25,12 +25,34 @@ As an example:
 </div>
 ```
 
+## Json Configuration
+
+It is possible to set up parameters for the stars in a JSON and set it in the `data-config-url` attribute of the div. 
+Note that due to some CORS policies this works only if the .html is served or hosted online.
+
+An example of json:
+```json
+{
+    "stars": [
+      {
+        "coordinates": [0, 0, 0],
+        "label": "Earth",
+        "link": "https://fsd-wargame.com/",
+        "description": "Good old earth"
+      },
+      {
+        "coordinates": [-12, -30, -7],
+        "label": "Another",
+        "link": "",
+        "description": ""
+      }
+    ]
+  }
+```
+
 ## Main future steps:
 
 * Add more configurations to the html
-* Add an option for a file to parse rather than the html - maybe a json? - for more complex situations
 * Auto generate a list of the neighbours when selecting a star
 * Being able to select areas-of-influence of stars, using the shader for this (in post-processing?)
 * Creating highlighted routes between stars
-
-

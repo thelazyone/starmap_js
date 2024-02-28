@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             configuration = await loadConfigFromURL(configUrl);
             console.log("DEBUG: ", configuration);
         } else {
-            configuration = loadConfigFromAttributes();
+            configuration = loadConfigFromAttributes(mapElement);
         }
         initStarMap(mapElement, configuration);
 
