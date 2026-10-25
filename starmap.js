@@ -376,12 +376,10 @@ function initStarMap(container, configuration) {
 
             void main() {
                 float r = length(gl_PointCoord - vec2(0.5, 0.5));
-                float smoothArea = min(0.4, 20./pow(roundRadius, 1.5));
+                // One screen pixel in units of the original point diameter.
+                float edgeWidth = 1.0 / max(roundRadius, 1.0);
                 float highlightScale = 5.;
-
-                // checking if vColor is undefined / nan / something else?
-                // TODO
-    
+                float alpha;
 
                 if (isHighlighted > 0.) {
 
@@ -391,28 +389,20 @@ function initStarMap(container, configuration) {
                     float outerRadius = innerRadius + ringThickness;
                     r *= highlightScale;
 
-                    if (r > 0.5 && (r < innerRadius || r > outerRadius)){
-                        discard;
-                    }
-
-                    // float alpha = smoothstep(0.5, 0.5 - smoothArea, r) + 
-                    // smoothstep(innerRadius, innerRadius + smoothArea, r) - 
-                    // smoothstep(outerRadius - smoothArea, outerRadius, r);
-
-                    gl_FragColor = vec4(vColor, 1.0);
+                    float discAlpha = 1.0 - smoothstep(max(0.0, 0.5 - edgeWidth), 0.5, r);
+                    float ringAlpha = smoothstep(innerRadius, innerRadius + edgeWidth, r)
+                        * (1.0 - smoothstep(outerRadius - edgeWidth, outerRadius, r));
+                    alpha = max(discAlpha, ringAlpha);
                 }
                 else {
-                    if (r > 0.5) {
-                        discard;
-                    }
-
-                    float alpha = smoothstep(0.5, 0.5 - smoothArea, r);
-
-                    gl_FragColor = vec4(vColor, 1.0);
+                    alpha = 1.0 - smoothstep(max(0.0, 0.5 - edgeWidth), 0.5, r);
                 }
+                if (alpha <= 0.0) discard;
+                gl_FragColor = vec4(vColor, alpha);
             }
         `,
         transparent: true,
+        depthWrite: false, // Soft edges must not hide stars drawn behind them.
     });
 
     // Defining look for outer stars 
@@ -436,6 +426,7 @@ function initStarMap(container, configuration) {
     inputStarsGeometry.setAttribute('position', new THREE.BufferAttribute(inputStarsPosition, 3));
     inputStarsGeometry.setAttribute('color', new THREE.BufferAttribute(convertColorsToBuffer(configuration.colors), 3));   
     var inputStarField = new THREE.Points(inputStarsGeometry, starMaterial);
+    inputStarField.renderOrder = 1; // Named stars always composite over the background.
     scene.add(inputStarField);
 
     // Adding background stars
@@ -450,9 +441,13 @@ function initStarMap(container, configuration) {
     outerStarsGeometry.setAttribute('position', new THREE.BufferAttribute(outerStarsPosition, 3));
     outerStarsGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(outerStarsAmount * 3).fill(.73), 3));
     var outerStarField = new THREE.Points(outerStarsGeometry, outerStarsMaterial);
+    outerStarField.renderOrder = 0;
     scene.add(outerStarField);
 
     // Displaying the labels
+    const starLabels = [];
+    const labelCameraPosition = new THREE.Vector3();
+    const projectedPosition = new THREE.Vector3();
     for (let i = 0; i < configuration.coordinates.length / 3; i += 1) {
         if (i < configuration.labels.length) {
             var labelDiv = document.createElement('div');
@@ -460,12 +455,12 @@ function initStarMap(container, configuration) {
             if (configuration.labels){
                 labelDiv.textContent = configuration.labels[i];
             }
-            labelDiv.style.marginTop = '-1em'; // Adjust as needed
             labelDiv.style.fontSize = '18px'; // Adjust as needed
+            labelDiv.style.whiteSpace = 'nowrap';
             var label = new THREE.CSS2DObject(labelDiv);
-            yOffset = -0; 
-            label.position.set(configuration.coordinates[i*3], configuration.coordinates[i*3 + 1] + yOffset, configuration.coordinates[i*3 + 2]);
+            label.position.set(configuration.coordinates[i*3], configuration.coordinates[i*3 + 1], configuration.coordinates[i*3 + 2]);
             scene.add(label);
+            starLabels.push(label);
         }
     }
 
@@ -478,7 +473,11 @@ function initStarMap(container, configuration) {
     // Adding small legend 
     addLegend(container); 
 
+    let lastLayoutTime = performance.now();
     function animate() {
+        const layoutTime = performance.now();
+        const layoutStep = Math.min((layoutTime - lastLayoutTime) / (1000 / 60), 2);
+        lastLayoutTime = layoutTime;
         requestAnimationFrame(animate);
 
         const elapsedTime = (Date.now() - startTime) / 1000.0; // Time in seconds
@@ -503,6 +502,83 @@ function initStarMap(container, configuration) {
         controls.update();
         renderer.render(scene, camera);
         labelRenderer.render(scene, camera);
+        // Lay out names nearest-first in screen space. HTML labels cannot
+        // participate in WebGL depth testing, so reserve star and label bounds.
+        const width = renderer.domElement.width;
+        const height = renderer.domElement.height;
+        const projectedStars = [];
+        for (let i = 0; i < inputStarsPosition.length / 3; i++) {
+            const position = projectedPosition.fromArray(inputStarsPosition, i * 3);
+            labelCameraPosition.copy(position).applyMatrix4(camera.matrixWorldInverse);
+            const depth = -labelCameraPosition.z;
+            const highlighted = position.distanceTo(starMaterial.uniforms.highlightPosition.value) < 0.001;
+            position.project(camera);
+            if (depth <= 0 || position.z < -1 || position.z > 1) continue;
+            const pointSize = Math.min(
+                starMaterial.uniforms.pointSize.value * 300 / depth,
+                starMaterial.uniforms.maxSize.value
+            );
+            const radius = pointSize * (highlighted ? 1.8 : 0.5);
+            projectedStars.push({ label: starLabels[i], depth, radius,
+                x: (position.x + 1) * width / 2,
+                y: (1 - position.y) * height / 2 });
+        }
+        projectedStars.sort((a, b) => a.depth - b.depth);
+        const gap = 6;
+        const labels = projectedStars.filter(star => star.label).map((star, rank) => {
+            const element = star.label.element;
+            const halfWidth = element.offsetWidth / 2;
+            const halfHeight = element.offsetHeight / 2;
+            const homeY = -(halfHeight + star.radius + gap);
+            // Keep displacement and velocity across frames, rather than choosing slots.
+            const motion = star.label.userData.motion ||
+                (star.label.userData.motion = { x: 0, y: homeY, vx: 0, vy: 0 });
+            element.style.visibility = 'visible';
+            element.style.zIndex = String(projectedStars.length - rank);
+            return { ...star, element, halfWidth, halfHeight, homeY, motion,
+                cx: star.x + motion.x, cy: star.y + motion.y,
+                fx: -motion.x * 0.025, fy: (homeY - motion.y) * 0.025 };
+        });
+        // An elliptical soft boundary starts repelling before rectangles touch.
+        // Its enclosing radius covers corners as well as the sides of each label.
+        function repel(a, bx, by, extentX, extentY, strength) {
+            const dx = (a.cx - bx) / extentX;
+            const dy = (a.cy - by) / extentY;
+            const distance = Math.hypot(dx, dy);
+            const reach = 1.5;
+            if (distance >= reach) return;
+            const force = (reach - distance) * strength;
+            const directionLength = Math.hypot(dx, dy) || 1;
+            a.fx += force * dx / directionLength;
+            a.fy += force * (distance < 0.001 ? -1 : dy / directionLength);
+        }
+        labels.forEach((label, index) => {
+            labels.forEach((other, otherIndex) => {
+                if (index === otherIndex) return;
+                // Farther names yield more, but both move continuously.
+                repel(label, other.cx, other.cy,
+                    label.halfWidth + other.halfWidth + gap,
+                    label.halfHeight + other.halfHeight + gap,
+                    index > otherIndex ? 3.0 : 0.8);
+            });
+            projectedStars.forEach(star => {
+                if (star.label === label.label) return;
+                repel(label, star.x, star.y,
+                    label.halfWidth + star.radius + gap,
+                    label.halfHeight + star.radius + gap, 4.0);
+            });
+            const motion = label.motion;
+            motion.vx = (motion.vx + label.fx * layoutStep) * Math.pow(0.65, layoutStep);
+            motion.vy = (motion.vy + label.fy * layoutStep) * Math.pow(0.65, layoutStep);
+            const speed = Math.hypot(motion.vx, motion.vy);
+            const limit = speed > 3 ? 3 / speed : 1;
+            motion.x += motion.vx * limit * layoutStep;
+            motion.y += motion.vy * limit * layoutStep;
+            // Keep the label above its own circle, even while neighbours push it.
+            motion.y = Math.min(motion.y, label.homeY);
+            label.element.style.marginLeft = `${motion.x}px`;
+            label.element.style.marginTop = `${motion.y}px`;
+        });
     }
     console.log("Calling animate");
     animate(starMaterial);
