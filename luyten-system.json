@@ -1,0 +1,123 @@
+{
+  "star": {
+    "name": "Luyten’s Star",
+    "radius": 45
+  },
+  "planets": [
+    {
+      "name": "Sauguro",
+      "orbit": 75,
+      "angle": 145,
+      "radius": 2.5,
+      "moons": [
+        {
+          "orbit": 7,
+          "angle": 40,
+          "radius": 0.975
+        },
+        {
+          "orbit": 11,
+          "angle": -30,
+          "radius": 0.675
+        }
+      ]
+    },
+    {
+      "name": "Claeo",
+      "orbit": 135,
+      "angle": -65,
+      "radius": 5,
+      "moons": [
+        {
+          "orbit": 10,
+          "angle": 45,
+          "radius": 0.975
+        },
+        {
+          "orbit": 16,
+          "angle": 240,
+          "radius": 2.1
+        },
+        {
+          "orbit": 22,
+          "angle": 310,
+          "radius": 1.65
+        }
+      ]
+    },
+    {
+      "name": "Archon",
+      "orbit": 205,
+      "angle": 200,
+      "radius": 8,
+      "rings": [
+        10,
+        11.5
+      ],
+      "moons": [
+        {
+          "orbit": 20,
+          "angle": -45,
+          "radius": 1.5
+        }
+      ]
+    },
+    {
+      "name": "Themis",
+      "orbit": 290,
+      "angle": 30,
+      "radius": 15,
+      "moons": [
+        {
+          "name": "Domu",
+          "orbit": 25,
+          "angle": 46,
+          "radius": 3.75
+        },
+        {
+          "name": "Norn",
+          "orbit": 35,
+          "angle": 210,
+          "radius": 2.25
+        },
+        {
+          "name": "Maat",
+          "orbit": 46,
+          "angle": 135,
+          "radius": 3.75
+        },
+        {
+          "name": "Giano Habitat",
+          "orbit": 57,
+          "angle": -20,
+          "radius": 1.95,
+          "inclination": 28,
+          "habitat": true
+        }
+      ],
+      "asteroids": {
+        "trojans": true,
+        "opposition": true,
+        "scattered": 65
+      }
+    },
+    {
+      "name": "Ruun",
+      "orbit": 410,
+      "angle": 125,
+      "radius": 5.5,
+      "rings": [
+        7,
+        8.5,
+        10
+      ],
+      "moons": [
+        {
+          "orbit": 18,
+          "angle": 45,
+          "radius": 1.65
+        }
+      ]
+    }
+  ]
+}

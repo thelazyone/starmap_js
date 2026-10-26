@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Luyten — system atlas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #080f20; color: #f3f4f7; font-family: 'Orbitron', sans-serif; }
+    main { max-width: 1400px; margin: auto; padding: 28px; }
+    header { margin-bottom: 20px; }
+    h1 { font-size: 34px; font-weight: 700; margin: 8px 0 16px; color: #eba523; }
+    .header-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; }
+    header p { margin: 0; color: #cbd1dd; font-size: 10px; line-height: 1.9; text-transform: uppercase; }
+    .chart-subtitle { flex-shrink: 0; }
+    .map-instructions { text-align: right; color: #e1e5ed; }
+    .map-frame, .luyten-map { clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut)); }
+    .map-frame { --cut: 16px; padding: 2px; background: #41454d; }
+    .luyten-map { --cut: 14.828px; position: relative; height: min(78vh, 850px); min-height: 480px; overflow: hidden; background: #f3f4f7; color: #20201c; }
+    .luyten-map canvas { display: block; touch-action: none; }
+    .luyten-label { position: absolute; font: 700 12px 'Orbitron', sans-serif; text-transform: uppercase; white-space: nowrap; padding: 2px 4px; border-radius: 3px; background: rgba(243,244,247,.86); color: #171713; }
+    .luyten-label.star { font-size: 10px; padding: 0; background: none; color: #f3f4f7; }
+    .luyten-label.region { color: #747466; font-size: 11px; letter-spacing: .05em; }
+    .map-toolbar { position: absolute; z-index: 10; top: 16px; left: 16px; display: flex; gap: 6px; }
+    button { background: #f3f4f7; border: 1px solid #77776a; border-radius: 5px; padding: 9px 12px; cursor: pointer; color: #22221d; }
+    button:hover { background: #eba523; border-color: #eba523; }
+    button:focus-visible { outline: 2px solid #eba523; outline-offset: 3px; }
+    .map-caption { position: absolute; z-index: 10; bottom: 14px; left: 16px; right: 16px; pointer-events: none; color: #6c6c60; font: 700 10px 'Orbitron',sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+    h1, button { font-family: 'Orbitron', sans-serif; font-weight: 700; text-transform: uppercase; }
+    button { font-size: 10px; }
+    @media(max-width: 960px) { .header-meta { flex-direction: column; gap: 8px; } .header-meta p { text-align: center; } }
+    @media(max-width: 600px) { main { padding: 14px; } h1 { font-size: 28px; text-align: center; } .luyten-map { height: 72vh; } .map-toolbar { left: 10px; right: 10px; gap: 4px; } button { padding: 8px; font-size: 9px; min-height: 44px; } }
+  </style>
+  <script defer src="https://unpkg.com/three@0.126.1/build/three.min.js"></script>
+  <script defer src="https://unpkg.com/three@0.126.1/examples/js/controls/OrbitControls.js"></script>
+  <script defer src="luyten.js"></script>
+</head>
+<body>
+  <main>
+    <header><h1>Luyten’s Star</h1><div class="header-meta"><p class="chart-subtitle">Orbital chart · not to scale</p><p class="map-instructions" id="map-instructions">Drag to rotate · scroll to zoom · right-drag to pan · double-click to explore</p></div></header>
+    <div class="map-frame"><div class="luyten-map" data-config-url="luyten-system.json" aria-label="Interactive map of the Luyten star system"></div></div>
+  </main>
+</body>
+</html>

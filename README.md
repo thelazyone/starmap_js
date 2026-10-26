@@ -52,7 +52,25 @@ An example of json:
   }
 ```
 
-## Main future steps:
+## Luyten system version
+
+Serve this folder and open `luyten.html` for the separate system atlas. It loads
+`luyten.js` and `luyten-system.json`; the original `index.html` and `starmap.js`
+remain independent.
+
+The configuration contains Sauguro, Claeo, Archon, Themis, and Ruun, in orbital
+order. Each body has a schematic `radius`, `orbit` radius, and `angle` in degrees.
+`moons` orbit their parent planet; `rings` lists planetary ring radii.
+Themis has Domu, Norn, Maat, and Giano Habitat, plus L4/L5 asteroid clouds,
+an L3 group, and scattered co-orbital asteroids. Unnamed moons from the reference
+have no `name` field: their bodies and orbits remain visible, with no label or selection.
+All distances, orbital phases, inclinations, and body sizes are illustrative.
+
+Drag to rotate, scroll to zoom, and right-drag to pan. Double-click a body to
+focus it, or use **Themis region**, **Full system**, and **Top view**. Labels
+use continuous repulsion and draw thin leaders when displaced from their bodies.
+
+## Original star map future steps:
 
 * Add more configurations to the html
 * Auto generate a list of the neighbours when selecting a star
